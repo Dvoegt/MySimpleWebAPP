@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World App</title>
+    <title>Click the Target Game</title>
     <style>
         * {
             margin: 0;
@@ -16,61 +16,208 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
+            cursor: crosshair;
         }
 
-        .container {
-            text-align: center;
+        .game-container {
+            position: relative;
+            width: 600px;
+            height: 400px;
             background: rgba(30, 30, 40, 0.9);
-            padding: 3rem 4rem;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
-            animation: fadeIn 1s ease-in;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
         }
 
-        h1 {
-            color: #ffffff;
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            font-weight: 300;
+        .target {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #ff4757, #ff3742);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
         }
 
-        p {
-            color: #b0b0b0;
+        .target:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 71, 87, 0.8);
+        }
+
+        .target:active {
+            transform: scale(0.9);
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            color: white;
             font-size: 1.2rem;
-            margin-top: 1rem;
+            z-index: 10;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .score, .time {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+
+        .game-over h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .restart-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            background: #ff3742;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            text-align: center;
         }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 2rem;
-                margin: 1rem;
+            .game-container {
+                width: 90vw;
+                height: 60vh;
             }
             
-            h1 {
-                font-size: 2.5rem;
+            .target {
+                width: 40px;
+                height: 40px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Hello World!</h1>
-        <p>Welcome to your basic web app</p>
+    <div class="game-container">
+        <div class="ui">
+            <div class="score">Score: <span id="score">0</span></div>
+            <div class="time">Time: <span id="time">30</span>s</div>
+        </div>
+        
+        <div class="target" id="target"></div>
+        
+        <div class="game-over" id="gameOver">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button class="restart-btn" onclick="restartGame()">Play Again</button>
+        </div>
+        
+        <div class="instructions">
+            Click the red target as many times as you can in 30 seconds!
+        </div>
     </div>
+
+    <script>
+        let score = 0;
+        let timeLeft = 30;
+        let gameRunning = true;
+        let gameInterval;
+        let target = document.getElementById('target');
+        let scoreElement = document.getElementById('score');
+        let timeElement = document.getElementById('time');
+        let gameOverElement = document.getElementById('gameOver');
+        let finalScoreElement = document.getElementById('finalScore');
+
+        function moveTarget() {
+            if (!gameRunning) return;
+            
+            const container = document.querySelector('.game-container');
+            const maxX = container.offsetWidth - 50;
+            const maxY = container.offsetHeight - 50;
+            
+            const newX = Math.random() * maxX;
+            const newY = Math.random() * maxY;
+            
+            target.style.left = newX + 'px';
+            target.style.top = newY + 'px';
+        }
+
+        function updateScore() {
+            score++;
+            scoreElement.textContent = score;
+            moveTarget();
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            timeElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            target.style.display = 'none';
+            finalScoreElement.textContent = score;
+            gameOverElement.style.display = 'block';
+        }
+
+        function restartGame() {
+            score = 0;
+            timeLeft = 30;
+            gameRunning = true;
+            scoreElement.textContent = score;
+            timeElement.textContent = timeLeft;
+            target.style.display = 'block';
+            gameOverElement.style.display = 'none';
+            moveTarget();
+            gameInterval = setInterval(updateTimer, 1000);
+        }
+
+        // Event listeners
+        target.addEventListener('click', updateScore);
+        
+        // Start the game
+        moveTarget();
+        gameInterval = setInterval(updateTimer, 1000);
+    </script>
 </body>
 </html> 
